@@ -44,8 +44,7 @@ class MainController extends AbstractController
             );
         }
         dd($users);
-        return new JsonResponse ($users);
-
+        return new JsonResponse($users);
     }
 
     /**
@@ -71,7 +70,7 @@ class MainController extends AbstractController
      * @Route("/delete/{id}", name="user_delete")
      */
 
-    public function delete($id)
+    public function deleteUser($id)
     {
         $this->denyAccessUnlessGranted('ROLE_USER');
         $user = $this->getDoctrine()->getRepository(User::class)->find($id);
@@ -87,25 +86,42 @@ class MainController extends AbstractController
 
     }
     /**
-     * @Route("/update", name="user_update")
+     * @Route("/emailupdate", name="email_update")
      *
      */
 
-    public function update($id){
+    public function updateEmail($id){
         $this->denyAccessUnlessGranted('ROLE_USER');
-        $id = $this->getUser();
         $entityManager= $this->getDoctrine()->getManager();
         $user = $entityManager->getRepository(User::class)->find($id);
 
-        $mail='kuba@wp.pl';
-        $name='kuba';
+        $mail='test@test.pl';
 
         $user->setEmail($mail);
-        $user->setName($name);
 
         $entityManager->flush();
 
-        dd($user);
-        return new JsonResponse($user);
+        return null;
+    }
+
+    /**
+     * @Route("/passupdate", name="pass_update")
+     *
+     */
+
+    public function updatePassword($id){
+        $this->denyAccessUnlessGranted('ROLE_USER');
+        $entityManager= $this->getDoctrine()->getManager();
+        $user = $entityManager->getRepository(User::class)->find($id);
+
+        $pass='asdfgh123';
+
+        if (strlen($pass)>= 6 ){
+            $user->setPassword($pass);
+            $entityManager->flush();
+        }else{
+            echo "password is too short";
+        }
+        return null;
     }
 }
