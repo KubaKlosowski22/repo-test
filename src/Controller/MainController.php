@@ -36,6 +36,8 @@ class MainController extends AbstractController
         return $this->render('main/loggedmain.html.twig');
     }
 
+    //Userlist functions require update - sensitive user data needs to be hidden.
+
     /**
      * @Route("/userslist", name="user_list")
      * Method({"POST"})
@@ -47,7 +49,7 @@ class MainController extends AbstractController
         $normalizers = [new ObjectNormalizer()];
         $serializer = new Serializer($normalizers,$encoders);
 
-        //$this->denyAccessUnlessGranted('ROLE_USER');
+        $this->denyAccessUnlessGranted('ROLE_USER');
         $users = $this->getDoctrine()
             ->getRepository(User::class)
             ->findAll();
@@ -109,6 +111,7 @@ class MainController extends AbstractController
     }
     /**
      * @Route("/emailupdate/{id}", name="email_update")
+     * Method({"POST"})
      */
 
     public function updateEmail($id){
@@ -126,7 +129,7 @@ class MainController extends AbstractController
 
     /**
      * @Route("/passupdate/{id}", name="pass_update")
-     *
+     *Method({"POST"})
      */
 
     public function updatePassword(UserPasswordEncoderInterface $encoder, $id){
