@@ -34,7 +34,7 @@ class MainController extends AbstractController
      */
     public function userList()
     {
-        $this->denyAccessUnlessGranted('ROLE_USER');
+        //$this->denyAccessUnlessGranted('ROLE_USER');
         $users = $this->getDoctrine()
             ->getRepository(User::class)
             ->findAll();
@@ -44,7 +44,7 @@ class MainController extends AbstractController
             );
         }
         dd($users);
-        return new JsonResponse($users);
+        return new JsonResponse ($users);
 
     }
 
@@ -54,16 +54,16 @@ class MainController extends AbstractController
     public function getUserById($id)
     {
         $this->denyAccessUnlessGranted('ROLE_USER');
-        $users = $this->getDoctrine()
+        $user = $this->getDoctrine()
             ->getRepository(User::class)
             ->find($id);
-        if (!$users) {
+        if (!$user) {
             throw $this->createNotFoundException(
                 'No User found for this id'
             );
         }
-        dd($users);
-        return new JsonResponse($users);
+        dd($user);
+        return new JsonResponse($user);
 
     }
 
@@ -85,5 +85,27 @@ class MainController extends AbstractController
             echo "You cant delete this User";
         }
 
+    }
+    /**
+     * @Route("/update", name="user_update")
+     *
+     */
+
+    public function update($id){
+        $this->denyAccessUnlessGranted('ROLE_USER');
+        $id = $this->getUser();
+        $entityManager= $this->getDoctrine()->getManager();
+        $user = $entityManager->getRepository(User::class)->find($id);
+
+        $mail='kuba@wp.pl';
+        $name='kuba';
+
+        $user->setEmail($mail);
+        $user->setName($name);
+
+        $entityManager->flush();
+
+        dd($user);
+        return new JsonResponse($user);
     }
 }
