@@ -9,9 +9,16 @@ use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
 Use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
+
 
 class MainController extends AbstractController
+
 {
+
     /**
      * @Route("/", name="main_page")
      */
@@ -30,10 +37,16 @@ class MainController extends AbstractController
     }
 
     /**
-     * @Route("/userlist", name="user_list")
+     * @Route("/userslist", name="user_list")
+     * Method({"POST"})
      */
-    public function userList()
+
+    public function usersList()
     {
+        $encoders = [new JsonEncoder()];
+        $normalizers = [new ObjectNormalizer()];
+        $serializer = new Serializer($normalizers,$encoders);
+
         //$this->denyAccessUnlessGranted('ROLE_USER');
         $users = $this->getDoctrine()
             ->getRepository(User::class)
@@ -43,15 +56,21 @@ class MainController extends AbstractController
                 'No product found for id'
             );
         }
-        dd($users);
-        return new JsonResponse($users);
+        $jsonData = $serializer->serialize($users, 'json');
+        dd($jsonData);
+        return new JsonResponse($jsonData);
     }
 
     /**
      * @Route("/userlist/{id}", name="user_list_by_id")
+     * Method({"POST"})
      */
     public function getUserById($id)
     {
+        $encoders = [new JsonEncoder()];
+        $normalizers = [new ObjectNormalizer()];
+        $serializer = new Serializer($normalizers,$encoders);
+
         $this->denyAccessUnlessGranted('ROLE_USER');
         $user = $this->getDoctrine()
             ->getRepository(User::class)
@@ -61,8 +80,11 @@ class MainController extends AbstractController
                 'No User found for this id'
             );
         }
-        dd($user);
-        return new JsonResponse($user);
+        $jsonData = $serializer->Serialize($user,'json');
+
+
+        dd($jsonData);
+        return new JsonResponse($jsonData);
 
     }
 
@@ -86,42 +108,37 @@ class MainController extends AbstractController
 
     }
     /**
-     * @Route("/emailupdate", name="email_update")
-     *
+     * @Route("/emailupdate/{id}", name="email_update")
      */
 
     public function updateEmail($id){
+        $request = Request::createFromGlobals();
         $this->denyAccessUnlessGranted('ROLE_USER');
         $entityManager= $this->getDoctrine()->getManager();
         $user = $entityManager->getRepository(User::class)->find($id);
 
-        $mail='test@test.pl';
+        $mail= $request->get("email");
 
         $user->setEmail($mail);
 
         $entityManager->flush();
-
-        return null;
     }
 
     /**
-     * @Route("/passupdate", name="pass_update")
+     * @Route("/passupdate/{id}", name="pass_update")
      *
      */
 
-    public function updatePassword($id){
+    public function updatePassword(UserPasswordEncoderInterface $encoder, $id){
+        $request = Request::createFromGlobals();
         $this->denyAccessUnlessGranted('ROLE_USER');
         $entityManager= $this->getDoctrine()->getManager();
         $user = $entityManager->getRepository(User::class)->find($id);
 
-        $pass='asdfgh123';
 
-        if (strlen($pass)>= 6 ){
-            $user->setPassword($pass);
-            $entityManager->flush();
-        }else{
-            echo "password is too short";
-        }
-        return null;
+        $pass= $request->get("pass");
+        $encoded = $encoder->encodePassword($user,$pass);
+        $user->setPassword($encoded);
+        $entityManager->flush();
     }
 }
