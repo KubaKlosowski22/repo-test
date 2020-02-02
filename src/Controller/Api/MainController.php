@@ -1,82 +1,53 @@
 <?php
 
-namespace App\Controller;
+namespace App\Controller\Api;
 
 use App\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
 Use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 
 
 class MainController extends AbstractController
 
 {
-
-    /**
-     * @Route("/", name="main_page")
-     */
-    public function index()
-    {
-        return $this->render('main/index.html.twig');
-    }
-
-    /**
-     * @Route("/start", name="logged_page")
-     */
-    public function logged()
-    {
-        $this->denyAccessUnlessGranted('ROLE_USER');
-        return $this->render('main/loggedmain.html.twig');
-    }
-
     //Userlist functions require update - sensitive user data needs to be hidden.
 
     /**
-     * @Route("/userslist", name="user_list")
-     * Method({"POST"})
+     * @Route("api/userslist", name="users_list", methods={"GET"})
      */
 
-    public function usersList()
+    public function usersList(SerializerInterface $serializer)
     {
-        $encoders = [new JsonEncoder()];
-        $normalizers = [new ObjectNormalizer()];
-        $serializer = new Serializer($normalizers,$encoders);
-
         $this->denyAccessUnlessGranted('ROLE_USER');
-        $users = $this->getDoctrine()
-            ->getRepository(User::class)
-            ->findAll();
+        $users = $this->getDoctrine()->getRepository(User::class)->findAll();
         if (!$users) {
             throw $this->createNotFoundException(
                 'No product found for id'
             );
         }
         $jsonData = $serializer->serialize($users, 'json');
-        dd($jsonData);
+
         return new JsonResponse($jsonData);
     }
 
     /**
-     * @Route("/userlist/{id}", name="user_list_by_id")
-     * Method({"POST"})
+     * @Route("api/userslist/{id}", name="users_list_by_id", methods={"GET"})
      */
-    public function getUserById($id)
+    public function getUserById(SerializerInterface $serializer,$id):Response
     {
-        $encoders = [new JsonEncoder()];
-        $normalizers = [new ObjectNormalizer()];
-        $serializer = new Serializer($normalizers,$encoders);
 
         $this->denyAccessUnlessGranted('ROLE_USER');
-        $user = $this->getDoctrine()
-            ->getRepository(User::class)
-            ->find($id);
+        $user = $this->getDoctrine()->getRepository(User::class)->find($id);
         if (!$user) {
             throw $this->createNotFoundException(
                 'No User found for this id'
@@ -84,17 +55,13 @@ class MainController extends AbstractController
         }
         $jsonData = $serializer->Serialize($user,'json');
 
-
-        dd($jsonData);
-        return new JsonResponse($jsonData);
-
+        return new JsonResponse($jsonData, Response::HTTP_OK);
     }
 
     /**
-     * @Route("/delete/{id}", name="user_delete")
+     * @Route("api/User/{id}", name="user_delete", methods={"DELETE"})
      */
-
-    public function deleteUser($id)
+    public function deleteUser($id):Response
     {
         $this->denyAccessUnlessGranted('ROLE_USER');
         $user = $this->getDoctrine()->getRepository(User::class)->find($id);
@@ -105,43 +72,48 @@ class MainController extends AbstractController
             $entityManager->remove($user);
             $entityManager->flush();
         } else {
-            echo "You cant delete this User";
+            return new JsonResponse(Response::HTTP_BAD_REQUEST);
         }
-
+        return new JsonResponse(Response::HTTP_OK);
     }
-    /**
-     * @Route("/emailupdate/{id}", name="email_update")
-     * Method({"POST"})
-     */
 
-    public function updateEmail($id){
+    /**
+     *
+     * @Route("api/user/{id}", name="email_update", methods={"PUT"})
+     */
+    public function updateEmail(SerializerInterface $serializer, $id):Response
+    {
         $request = Request::createFromGlobals();
         $this->denyAccessUnlessGranted('ROLE_USER');
         $entityManager= $this->getDoctrine()->getManager();
         $user = $entityManager->getRepository(User::class)->find($id);
 
-        $mail= $request->get("email");
-
+        $mail= $request->get('email',EmailType::class);
         $user->setEmail($mail);
 
         $entityManager->flush();
+        $serializer->serialize($user,'json');
+
+        return new JsonResponse($user,Response::HTTP_OK);
     }
 
     /**
-     * @Route("/passupdate/{id}", name="pass_update")
-     *Method({"POST"})
+     * @Route("api/user/{id}", name="password_update", methods={"PUT"})
      */
-
-    public function updatePassword(UserPasswordEncoderInterface $encoder, $id){
+    public function updatePassword(SerializerInterface $serializer, UserPasswordEncoderInterface $encoder, $id)
+    {
         $request = Request::createFromGlobals();
         $this->denyAccessUnlessGranted('ROLE_USER');
         $entityManager= $this->getDoctrine()->getManager();
         $user = $entityManager->getRepository(User::class)->find($id);
 
-
-        $pass= $request->get("pass");
+        $pass= $request->get('password',PasswordType::class);
         $encoded = $encoder->encodePassword($user,$pass);
         $user->setPassword($encoded);
+
         $entityManager->flush();
+        $serializer->serialize($user,'json');
+
+        return new JsonResponse($user,Response::HTTP_OK);
     }
 }
