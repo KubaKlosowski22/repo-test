@@ -61,7 +61,7 @@ class MainController extends AbstractController
     /**
      * @Route("api/User/{id}", name="user_delete", methods={"DELETE"})
      */
-    public function deleteUser($id):Response
+    public function deleteUser(SerializerInterface $serialize,$id):Response
     {
         $this->denyAccessUnlessGranted('ROLE_USER');
         $user = $this->getDoctrine()->getRepository(User::class)->find($id);
